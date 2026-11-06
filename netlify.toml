@@ -1,0 +1,12 @@
+[build]
+  # Generate the Prisma client, then build Next.js.
+  # (Bypasses package.json's standalone-copy step, which is local-only.)
+  command = "npx prisma generate && npx next build"
+  publish = ".next"
+
+# Official runtime — supports App Router pages, ISR/revalidateTag and API routes.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "20"
