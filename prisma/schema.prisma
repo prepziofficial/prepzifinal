@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+  // "native" covers local dev; the rhel targets cover Linux hosts such as
+  // Netlify / Render / Railway whose OpenSSL build differs from Debian.
+  binaryTargets = ["native", "rhel-openssl-1.1.x", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")       // Supabase pooler (port 6543, pgbouncer)
+  directUrl = env("DIRECT_URL")         // direct connection used for migrations
+}
+
+model Subject {
+  id          String      @id @default(cuid())
+  name        String
+  level       String // "IGCSE" | "AS_ALEVEL"
+  paperCode   String? // e.g. "0580", "9702"
+  description String?
+  icon        String? // lucide icon id chosen in admin, e.g. "atom"
+  createdAt   DateTime    @default(now())
+  files       PaperFile[]
+
+  @@unique([name, level])
+}
+
+model PaperFile {
+  id        String   @id @default(cuid())
+  subjectId String
+  title     String
+  paperCode String?
+  topic     String?
+  kind      String   @default("TOPICAL") // "NOTES" | "YEARLY" | "TOPICAL"
+  externalUrl String  // link to the resource (Google Drive, etc.)
+  createdAt DateTime @default(now())
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  // ── YEARLY papers ──
+  year        Int? // e.g. 2025
+  session     String? // "FEB_MAR" | "MAY_JUNE" | "OCT_NOV"
+  paperNumber Int? // e.g. 1, 2, 3
+  variant     String? // e.g. "1", "2" (optional)
+
+  // ── NOTES & TOPICAL papers ──
+  chapterNumber String? // e.g. "1"
+  chapterName   String? // e.g. "Financial accounting"
+  sectionNumber String? // e.g. "1.1"
+  sectionName   String? // e.g. "Types of business entity"
+
+  @@index([kind])
+}
+
+/// Key/value store for editable site content (footer links, contact email)
+/// and secrets that are stored only as hashes (admin password).
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
